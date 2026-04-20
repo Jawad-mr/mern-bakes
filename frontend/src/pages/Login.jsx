@@ -9,7 +9,7 @@ export default function LoginPage() {
   const [showPw, setShowPw]   = useState(false)
   const [selectedRole, setRole] = useState('Cashier')
   const [form, setForm]       = useState({ name:'', email:'', password:'' })
-  const { login, register }   = useAuth()
+  const { login, demoLogin, register }   = useAuth()
   const nav = useNavigate()
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }))
@@ -37,7 +37,17 @@ export default function LoginPage() {
     } finally { setLoading(false) }
   }
 
-  const fillDemo = (email, pw) => { setForm(f => ({ ...f, email, password: pw })); setTab('login') }
+  const fillDemo = async (email) => {
+    setLoading(true)
+    try {
+      await demoLogin(email)
+      nav('/home')
+    } catch (e) {
+      toast('Demo login failed: ' + e.message, 'error')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', overflow: 'hidden' }}>
@@ -103,7 +113,7 @@ export default function LoginPage() {
                   { name: 'Priya Menon', role: 'Cashier', email: 'cashier@sweetcrumb.in', pw: 'cash123', color: '#0a3622', bg: '#d1e7dd' },
                   { name: 'Ravi Kumar', role: 'Staff', email: 'staff@sweetcrumb.in', pw: 'staff123', color: '#084298', bg: '#cfe2ff' },
                 ].map(d => (
-                  <div key={d.role} onClick={() => fillDemo(d.email, d.pw)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '5px 6px', borderRadius: 6, cursor: 'pointer', transition: 'background .15s', marginBottom: 2 }}
+                  <div key={d.role} onClick={() => fillDemo(d.email)} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '5px 6px', borderRadius: 6, cursor: 'pointer', transition: 'background .15s', marginBottom: 2 }}
                     onMouseEnter={e => e.currentTarget.style.background = 'rgba(200,144,42,.1)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                     <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--c-text-mid)' }}>

@@ -53,10 +53,29 @@ export function AuthProvider({ children }) {
     return user
   }
 
+  const demoLogin = async (email) => {
+    const demoUsers = {
+      'admin@sweetcrumb.in': { _id: 'demo-admin', name: 'Arjun Sharma', email: 'admin@sweetcrumb.in', role: 'Admin', isActive: true },
+      'cashier@sweetcrumb.in': { _id: 'demo-cashier', name: 'Priya Menon', email: 'cashier@sweetcrumb.in', role: 'Cashier', isActive: true },
+      'staff@sweetcrumb.in': { _id: 'demo-staff', name: 'Ravi Kumar', email: 'staff@sweetcrumb.in', role: 'Staff', isActive: true },
+    }
+    const user = demoUsers[email]
+    if (!user) throw new Error('Demo user not found')
+    
+    const token = 'demo-token-' + Date.now()
+    localStorage.setItem('sc_token', token)
+    localStorage.setItem('sc_is_demo', 'true')
+    api.defaults.headers.common['Authorization'] = `Bearer ${token}`
+    setUser(user)
+    setBakerySettings({ bakeryName: 'SweetCrumb Bakery (Demo)', logoUrl: '' })
+    return user
+  }
+
   const register = async (name, email, password, role) => {
     const r = await api.post('/auth/register', { name, email, password, role })
     const { token, user } = r.data
     localStorage.setItem('sc_token', token)
+    localStorage.removeItem('sc_is_demo')
     api.defaults.headers.common['Authorization'] = `Bearer ${token}`
     setUser(user)
     await fetchSettings()
@@ -85,6 +104,7 @@ export function AuthProvider({ children }) {
         user,
         loading,
         login,
+        demoLogin,
         register,
         logout,
         theme,
