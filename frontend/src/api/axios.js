@@ -14,35 +14,32 @@ api.interceptors.request.use(config => {
   const method = config.method.toUpperCase()
   const url = config.url
   
+  // Helper to create mock response
+  const mockResponse = (data) => ({
+    status: 200,
+    statusText: 'OK',
+    data: { success: true, data },
+    headers: {},
+    config
+  })
+  
   // GET requests - return mock data
   if (method === 'GET') {
     if (url.includes('/products')) {
       const products = getDemoData('products') || []
-      return Promise.resolve({ data: { success: true, data: products } }).then(r => {
-        config._mockResponse = r.data
-        return config
-      })
+      return Promise.resolve(mockResponse(products))
     }
     if (url.includes('/purchases')) {
       const purchases = getDemoData('purchases') || []
-      return Promise.resolve({ data: { success: true, data: purchases } }).then(r => {
-        config._mockResponse = r.data
-        return config
-      })
+      return Promise.resolve(mockResponse(purchases))
     }
     if (url.includes('/orders')) {
       const orders = getDemoData('orders') || []
-      return Promise.resolve({ data: { success: true, data: orders } }).then(r => {
-        config._mockResponse = r.data
-        return config
-      })
+      return Promise.resolve(mockResponse(orders))
     }
     if (url.includes('/billing')) {
       const billing = getDemoData('billing') || {}
-      return Promise.resolve({ data: { success: true, data: billing } }).then(r => {
-        config._mockResponse = r.data
-        return config
-      })
+      return Promise.resolve(mockResponse(billing))
     }
   }
   
@@ -50,24 +47,15 @@ api.interceptors.request.use(config => {
   if (method === 'POST') {
     if (url.includes('/products')) {
       const newItem = addDemoProduct(config.data)
-      return Promise.resolve({ data: { success: true, data: newItem } }).then(r => {
-        config._mockResponse = r.data
-        return config
-      })
+      return Promise.resolve(mockResponse(newItem))
     }
     if (url.includes('/purchases')) {
       const newItem = addDemoPurchase(config.data)
-      return Promise.resolve({ data: { success: true, data: newItem } }).then(r => {
-        config._mockResponse = r.data
-        return config
-      })
+      return Promise.resolve(mockResponse(newItem))
     }
     if (url.includes('/orders')) {
       const newItem = addDemoOrder(config.data)
-      return Promise.resolve({ data: { success: true, data: newItem } }).then(r => {
-        config._mockResponse = r.data
-        return config
-      })
+      return Promise.resolve(mockResponse(newItem))
     }
   }
   
@@ -79,10 +67,7 @@ api.interceptors.request.use(config => {
       const id = idMatch[2]
       const updateFn = type === 'product' ? updateDemoProduct : updateDemoPurchase
       const updated = updateFn(id, config.data)
-      return Promise.resolve({ data: { success: true, data: updated } }).then(r => {
-        config._mockResponse = r.data
-        return config
-      })
+      return Promise.resolve(mockResponse(updated))
     }
   }
   
@@ -95,21 +80,11 @@ api.interceptors.request.use(config => {
       if (type === 'product') deleteDemoProduct(id)
       else if (type === 'purchase') deleteDemoPurchase(id)
       else if (type === 'order') deleteDemoOrder(id)
-      return Promise.resolve({ data: { success: true, message: 'Deleted' } }).then(r => {
-        config._mockResponse = r.data
-        return config
-      })
+      return Promise.resolve(mockResponse({ success: true }))
     }
   }
   
   return config
-}, err => Promise.reject(err))
-
-api.interceptors.response.use(res => {
-  if (res.config._mockResponse) {
-    res.data = res.config._mockResponse
-  }
-  return res
 }, err => Promise.reject(err))
 
 export default api
