@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { TopNav, BottomNav, toast } from '../components'
 import { productAPI, orderAPI } from '../api/axios'
+import { isDemoMode, getDemoProducts, addDemoOrder } from '../utils/mockData'
 import { fmt, printReceipt, whatsappReceipt } from '../utils/helpers'
 
 const GST = 5
@@ -19,6 +20,12 @@ export default function BillingPage() {
   const [lastOrder, setLastOrder] = useState(null)
 
   useEffect(() => {
+    if (isDemoMode()) {
+      const demoProducts = getDemoProducts()
+      setProducts(demoProducts)
+      setCats(['All', ...new Set(demoProducts.map(p => p.category))])
+      return
+    }
     productAPI.getAll().then(r => {
       setProducts(r.data.data)
       setCats(['All', ...r.data.categories])
@@ -62,17 +69,30 @@ export default function BillingPage() {
     if (!cart.length) return
     setLoading(true)
     try {
-      const r = await orderAPI.create({
+      const payload = {
         customer: customer.name || 'Walk-in',
         phone: customer.phone,
-        items: cart.map(i => ({ productId: i._id, qty: i.qty })),
+        items: cart.map(i => ({ productId: i._id, name: i.name, qty: i.qty, price: i.price, subtotal: i.price * i.qty })),
         method,
-      })
+        subtotal,
+        gstAmount,
+        total,
+        cashierName: user?.name || 'Demo Cashier',
+      }
+      const r = isDemoMode()
+        ? { data: { data: addDemoOrder(payload) } }
+        : await orderAPI.create({
+            customer: payload.customer,
+            phone: payload.phone,
+            items: cart.map(i => ({ productId: i._id, qty: i.qty })),
+            method,
+          })
       setLastOrder(r.data.data)
       setCart([])
       setCustomer({ name: '', phone: '' })
       // Refresh products for updated stock
-      productAPI.getAll().then(r => setProducts(r.data.data))
+      if (isDemoMode()) setProducts(getDemoProducts())
+      else productAPI.getAll().then(r => setProducts(r.data.data))
       toast(`Order placed! ${fmt(r.data.data.total)}`, 'success')
     } catch (e) {
       toast(e.response?.data?.message || 'Order failed', 'error')

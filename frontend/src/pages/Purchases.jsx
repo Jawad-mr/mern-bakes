@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { TopNav, BottomNav, StatCard, Pagination, ConfirmModal, Modal, toast } from '../components'
 import { purchaseAPI, productAPI } from '../api/axios'
+import { isDemoMode, getDemoPurchases, getDemoProducts, addDemoPurchase, updateDemoPurchase, deleteDemoPurchase } from '../utils/mockData'
 import { fmt, fmtDate, fmtTime } from '../utils/helpers'
 
 export default function PurchasesPage() {
@@ -27,6 +28,13 @@ export default function PurchasesPage() {
   const fetchPurchases = async () => {
     setLoading(true)
     try {
+      if (isDemoMode()) {
+        const demoPurchases = getDemoPurchases()
+        setPurchases(demoPurchases)
+        setPag({ total: demoPurchases.length, pages: 1 })
+        setTS({ count: demoPurchases.length, totalCost: demoPurchases.reduce((s, p) => s + Number(p.totalCost || 0), 0) })
+        return
+      }
       const params = { page, limit: PER }
       if (range) params.range = range
       if (search) params.search = search
@@ -41,6 +49,10 @@ export default function PurchasesPage() {
 
   const fetchProducts = async () => {
     try {
+      if (isDemoMode()) {
+        setProducts(getDemoProducts())
+        return
+      }
       const r = await productAPI.getAll()
       setProducts(r.data.data || [])
     } catch {
@@ -78,19 +90,12 @@ export default function PurchasesPage() {
     setSaving(true)
     try {
       if (modal === 'add') {
-        await purchaseAPI.create({
-          productId: form.productId,
-          qtyAdded: qty,
-          costPrice: cp,
-          notes: form.notes,
-        })
+        if (isDemoMode()) addDemoPurchase({ productId: form.productId, qtyAdded: qty, costPrice: cp, notes: form.notes })
+        else await purchaseAPI.create({ productId: form.productId, qtyAdded: qty, costPrice: cp, notes: form.notes })
         toast('Purchase added and stock updated', 'success')
       } else {
-        await purchaseAPI.update(editItem._id, {
-          qtyAdded: qty,
-          costPrice: cp,
-          notes: form.notes,
-        })
+        if (isDemoMode()) updateDemoPurchase(editItem._id, { qtyAdded: qty, costPrice: cp, notes: form.notes })
+        else await purchaseAPI.update(editItem._id, { qtyAdded: qty, costPrice: cp, notes: form.notes })
         toast('Purchase updated and stock adjusted', 'success')
       }
 
@@ -107,7 +112,8 @@ export default function PurchasesPage() {
 
   const handleDelete = async () => {
     try {
-      await purchaseAPI.delete(deleteId)
+      if (isDemoMode()) deleteDemoPurchase(deleteId)
+      else await purchaseAPI.delete(deleteId)
       toast('Purchase deleted and stock adjusted', 'success')
       setDeleteId(null)
       fetchPurchases()

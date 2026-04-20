@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { TopNav, BottomNav, StatCard, BarChart } from '../components'
 import { orderAPI, purchaseAPI, productAPI } from '../api/axios'
+import { isDemoMode, getDemoProducts, getDemoOrders, getDemoOrderStats, getDemoTodayPurchaseStats } from '../utils/mockData'
 import { fmt, today } from '../utils/helpers'
 
 export default function HomePage() {
@@ -15,6 +16,15 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    if (isDemoMode()) {
+      const demoStats = getDemoOrderStats()
+      setStats(demoStats)
+      setProds(getDemoProducts())
+      setOrders(getDemoOrders().slice(0, 6))
+      setTP(getDemoTodayPurchaseStats())
+      setLoading(false)
+      return
+    }
     Promise.all([
       orderAPI.getStats(),
       productAPI.getAll(),
@@ -91,14 +101,14 @@ export default function HomePage() {
         <div style={{ display: 'grid', gridTemplateColumns: isAdmin ? '1fr 1fr' : '1fr', gap: 16, marginBottom: 24 }}>
           <div className="card card-padded">
             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--c-text-soft)', marginBottom: 4 }}>Last 7 Days</div>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, marginBottom: 16 }}>{fmt(stats?.charts.last7.reduce((s, d) => s + d.v, 0))}</div>
-            <BarChart data={stats?.charts.last7 || []} />
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, marginBottom: 16 }}>{fmt(stats?.charts?.last7?.reduce((s, d) => s + d.v, 0))}</div>
+              <BarChart data={stats?.charts?.last7 || []} />
           </div>
           {isAdmin ? (
             <div className="card card-padded">
               <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--c-text-soft)', marginBottom: 4 }}>Last 6 Months</div>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, marginBottom: 16 }}>{fmt(stats?.charts.last6m.reduce((s, d) => s + d.v, 0))}</div>
-              <BarChart data={stats?.charts.last6m || []} />
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, marginBottom: 16 }}>{fmt(stats?.charts?.last6m?.reduce((s, d) => s + d.v, 0))}</div>
+                <BarChart data={stats?.charts?.last6m || []} />
             </div>
           ) : (
             <div className="role-guard"><div className="role-guard__icon">🔒</div><div className="role-guard__title">Admin Only</div>Monthly analytics restricted.</div>
@@ -112,7 +122,7 @@ export default function HomePage() {
             <div className="section-title">🕐 Recent Orders</div>
             <div className="card card-padded">
               {recentOrders.length ? recentOrders.map(o => {
-                const init = o.customer.split(' ').map(w => w[0]).join('').slice(0, 2)
+                const init = (o.customer || '??').split(' ').map(w => w[0]).join('').slice(0, 2)
                 const time = new Date(o.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
                 return (
                   <div key={o._id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px', borderRadius: 'var(--radius-sm)', marginBottom: 8, background: 'var(--c-cream)', border: '1px solid var(--c-border-soft)' }}>

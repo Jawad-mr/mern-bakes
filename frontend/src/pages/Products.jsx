@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { TopNav, BottomNav, StatCard, Modal, ConfirmModal, toast } from '../components'
 import { productAPI } from '../api/axios'
+import { isDemoMode, getDemoProducts, addDemoProduct, updateDemoProduct, deleteDemoProduct } from '../utils/mockData'
 import { fmt } from '../utils/helpers'
 
 const CATEGORIES = ['Pastries','Breads','Muffins','Tarts','Cakes','Cookies','Beverages','Other']
@@ -27,6 +28,12 @@ export default function ProductsPage() {
   const fetchProducts = async () => {
     setLoading(true)
     try {
+      if (isDemoMode()) {
+        const demoProducts = getDemoProducts()
+        setProducts(demoProducts)
+        setCats(['All', ...new Set(demoProducts.map(p => p.category))])
+        return
+      }
       const params = {}
       if (catFilter !== 'All') params.category = catFilter
       if (search) params.search = search
@@ -53,10 +60,12 @@ export default function ProductsPage() {
     setSaving(true)
     try {
       if (modal === 'add') {
-        await productAPI.create(form)
+        if (isDemoMode()) addDemoProduct(form)
+        else await productAPI.create(form)
         toast('Product added!', 'success')
       } else {
-        await productAPI.update(editItem._id, form)
+        if (isDemoMode()) updateDemoProduct(editItem._id, form)
+        else await productAPI.update(editItem._id, form)
         toast('Product updated!', 'success')
       }
       setModal(null); fetchProducts()
@@ -67,7 +76,8 @@ export default function ProductsPage() {
 
   const handleDelete = async () => {
     try {
-      await productAPI.delete(deleteId)
+      if (isDemoMode()) deleteDemoProduct(deleteId)
+      else await productAPI.delete(deleteId)
       toast('Product removed', 'success')
       setDeleteId(null); fetchProducts()
     } catch (e) { toast('Delete failed', 'error') }

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { TopNav, BottomNav, StatCard, Pagination, Modal, ConfirmModal, toast } from '../components'
 import { orderAPI } from '../api/axios'
+import { isDemoMode, getDemoOrders, getDemoOrderStats, deleteDemoOrder } from '../utils/mockData'
 import { fmt, fmtDate, fmtTime, fmtDateTime, exportCSV, printReceipt, whatsappReceipt } from '../utils/helpers'
 
 export default function OrdersPage() {
@@ -24,6 +25,12 @@ export default function OrdersPage() {
   const fetchOrders = async () => {
     setLoading(true)
     try {
+      if (isDemoMode()) {
+        const demoOrders = getDemoOrders()
+        setOrders(demoOrders)
+        setPag({ total: demoOrders.length, pages: 1 })
+        return
+      }
       const params = { page, limit: PER }
       if (range) params.range = range
       if (search) params.search = search
@@ -35,6 +42,10 @@ export default function OrdersPage() {
   }
 
   const fetchStats = async () => {
+    if (isDemoMode()) {
+      setStats(getDemoOrderStats())
+      return
+    }
     const r = await orderAPI.getStats()
     setStats(r.data)
   }
@@ -54,7 +65,8 @@ export default function OrdersPage() {
 
   const handleDelete = async () => {
     try {
-      await orderAPI.delete(deleteId)
+      if (isDemoMode()) deleteDemoOrder(deleteId)
+      else await orderAPI.delete(deleteId)
       toast('Order deleted and stock restored', 'success')
       setDeleteId(null)
       fetchOrders(); fetchStats()
@@ -65,8 +77,8 @@ export default function OrdersPage() {
 
   const handleExportCSV = async () => {
     try {
-      const r = await orderAPI.getAll({ range, limit: 10000 })
-      exportCSV(r.data.data)
+      const data = isDemoMode() ? getDemoOrders() : (await orderAPI.getAll({ range, limit: 10000 })).data.data
+      exportCSV(data)
       toast('CSV exported!', 'success')
     } catch { toast('Export failed', 'error') }
   }
