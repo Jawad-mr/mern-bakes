@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import api from '../api/axios'
+import { initDemoData } from '../utils/mockData'
 
 const AuthContext = createContext(null)
 
@@ -62,6 +63,7 @@ export function AuthProvider({ children }) {
     const user = demoUsers[email]
     if (!user) throw new Error('Demo user not found')
     
+    initDemoData()
     const token = 'demo-token-' + Date.now()
     localStorage.setItem('sc_token', token)
     localStorage.setItem('sc_is_demo', 'true')
